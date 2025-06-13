@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { boolean } = require('webidl-conversions');
+const mongooseaggregatepassinate = require('mongoose-aggregate-paginate-v2');
 const videoSchema = new mongoose.Schema({
     videofile :  {
         type : String, //couldnairy
@@ -34,3 +34,6 @@ const videoSchema = new mongoose.Schema({
         default : true 
     }
 },{timestamps : true });
+videoSchema.plugin(mongooseaggregatepassinate);
+const video = mongoose.model('video',videoSchema);
+module.exports = video;
