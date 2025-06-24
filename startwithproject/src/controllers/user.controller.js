@@ -6,7 +6,7 @@ const registeruser = async (req, res) => {
     try {
         const { fullname, email, username, password } = req.body;
 
-        // Basic field validation
+        
         if (!fullname || !email || !username || !password) {
             throw new ApiError(400, "All fields are required");
         }
@@ -47,7 +47,7 @@ const registeruser = async (req, res) => {
             coverimage: coverImageCloudUrl || "",
             email,
             username,
-            password // You should hash this!
+            password
         });
 
         if (!newUser) {
@@ -66,4 +66,94 @@ const registeruser = async (req, res) => {
     }
 };
 
-module.exports = registeruser;
+
+//seperate method for generate refresh token and access token 
+
+const generaterefreshtokenandaccesstoken = async (userid)=>
+{ 
+    try{
+        const user = User.findById(userid);
+        const accesstoken = user.accestokengenertor();
+        const refreshtoken = user.refreshtokentokengenertor();
+
+        user.refreshtoken = refreshtoken;
+        await user.save({validateBeforeSave : false})
+        return {accesstoken,refreshtoken};
+
+    }
+    catch(err)
+    {
+
+    }
+
+}
+const loginuser = async (req,res) =>{
+      // get  username and password 
+      // check for null values 
+      // find username in database 
+      //if found check for password for same user 
+      // genertate acceess token and refresh token
+      //send cookie to user 
+      try{
+      const {username, password} = req.body; 
+      if(!username || !password)
+      {
+        throw new ApiError(404, "all fields are required");
+
+      }
+      const user = await User.findOne(username);
+      if(!user)
+      {
+        throw new ApiError(401, "username does not exist");
+      }
+        const matched = await user.ispasswordmatch(password);
+        if(!matched)
+        {
+            throw new ApiError(404, "password does not match ");
+        }
+      const {accesstoken ,refreshtoken} =   await generaterefreshtokenandaccesstoken(user._id);
+      const options = {
+        httpOnly : true,
+        secure : true 
+      }
+     return res.status(200).cookie("accesstoken",accesstoken,options).cookie("refreshtoken",refreshtoken,options).json({
+        accesstoken,
+        refreshtoken
+     })
+
+
+      }
+      catch(err)
+      {    
+           const message = err.message;
+           console.log("error occured while login user");
+           return res.status(404).json({error : message});
+      }
+
+}
+
+const logoutuser = async(req,res)=>{
+    try{
+
+        const user = User.findById(req.user._id);
+        if(!user)
+        {
+            throw new ApiError(402,"user not found to logout");
+        }
+        user.refreshtoken = "";
+        user.save();
+
+        const options = {
+            httpOnly : true ,
+            secure  : true 
+        }
+        return res.status(200).clearCookie("accesstoken",options).clearCookie("refreshtoken",options).json("user logout succesfully");
+    }
+    catch(err)
+    {
+        const message = err.message;
+        return res.status(404).json(`error : ${message}`);
+    }
+}
+
+module.exports = {registeruser,loginuser, logoutuser};
