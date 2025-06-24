@@ -11,7 +11,7 @@ const registeruser = async (req, res) => {
             throw new ApiError(400, "All fields are required");
         }
 
-        // Check if user already exists
+        
         const existingUser = await User.findOne({ username });
         if (existingUser) {
             throw new ApiError(409, "User already exists");
@@ -31,7 +31,7 @@ const registeruser = async (req, res) => {
             }
             avatarCloudUrl = uploadedAvatar;
         }
-
+      
         if (coverImageLocalPath) {
             const uploadedCover = await uploadOnCloudinary(coverImageLocalPath);
             if (!uploadedCover) {
@@ -44,7 +44,7 @@ const registeruser = async (req, res) => {
         const newUser = await User.create({
             fullname,
             avatar: avatarCloudUrl,
-            coverimage: coverImageCloudUrl,
+            coverimage: coverImageCloudUrl || "",
             email,
             username,
             password // You should hash this!
