@@ -72,7 +72,7 @@ const registeruser = async (req, res) => {
 const generaterefreshtokenandaccesstoken = async (userid)=>
 { 
     try{
-        const user = User.findById(userid);
+        const user = await User.findById(userid);
         const accesstoken = user.accestokengenertor();
         const refreshtoken = user.refreshtokentokengenertor();
 
@@ -83,7 +83,8 @@ const generaterefreshtokenandaccesstoken = async (userid)=>
     }
     catch(err)
     {
-
+        console.log(err.message);
+        
     }
 
 }
@@ -96,12 +97,13 @@ const loginuser = async (req,res) =>{
       //send cookie to user 
       try{
       const {username, password} = req.body; 
+    
       if(!username || !password)
       {
         throw new ApiError(404, "all fields are required");
 
       }
-      const user = await User.findOne(username);
+      const user = await User.findOne({username});
       if(!user)
       {
         throw new ApiError(401, "username does not exist");
@@ -111,12 +113,17 @@ const loginuser = async (req,res) =>{
         {
             throw new ApiError(404, "password does not match ");
         }
+        console.log(user);
+        
       const {accesstoken ,refreshtoken} =   await generaterefreshtokenandaccesstoken(user._id);
       const options = {
         httpOnly : true,
         secure : true 
       }
-     return res.status(200).cookie("accesstoken",accesstoken,options).cookie("refreshtoken",refreshtoken,options).json({
+       console.log(accesstoken);
+      
+      
+      return res.status(200).cookie("accesstoken",accesstoken,options).cookie("refreshtoken",refreshtoken,options).json({
         accesstoken,
         refreshtoken
      })
@@ -127,6 +134,8 @@ const loginuser = async (req,res) =>{
       {    
            const message = err.message;
            console.log("error occured while login user");
+           console.log(message);
+           
            return res.status(404).json({error : message});
       }
 
@@ -135,13 +144,16 @@ const loginuser = async (req,res) =>{
 const logoutuser = async(req,res)=>{
     try{
 
-        const user = User.findById(req.user._id);
+        const user = await User.findById(req.user._id);
+        console.log(req.user);
         if(!user)
         {
             throw new ApiError(402,"user not found to logout");
         }
+        console.log(user);
+        
         user.refreshtoken = "";
-        user.save();
+        await user.save({validateBeforeSave : false});
 
         const options = {
             httpOnly : true ,

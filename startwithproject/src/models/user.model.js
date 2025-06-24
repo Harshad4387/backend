@@ -58,29 +58,29 @@ userSchema.methods.ispasswordmatch = async function(password)
 {
     return await bcrpyt.compare(password , this.password)
 }
-userSchema.methods.accestokengenertor = function()
+
+userSchema.methods.accestokengenertor =  function()
 {
-    jwt.sign(
+  return jwt.sign(
         {   
-            __id : this.__id,
-            password : this.password,
+            _id : this._id.toString(),
             username : this.username,
             fullname : this.fullname
         },
         process.env.JWT_TOKEN_SECERT,
         {
-            expires : process.env.JWT_TOKEN_EXPIRY
+            expiresIn : process.env.JWT_TOKEN_EXPIRY
         }
     )
 }
 userSchema.methods.refreshtokentokengenertor = function()
 {
-    jwt.sign({
-         __id : this.__id
+    return jwt.sign({
+         _id : this._id
     } ,
 process.env.REFRESH_TOEKN_SECERT,
 {
-    expires : REFRESH_TOEKN_EXPIRY
+    expiresIn : process.env.REFRESH_TOEKN_EXPIRY
 })
 }
 
