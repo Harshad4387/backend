@@ -193,4 +193,137 @@ const renewaccestoken = async (req,res)=>{
     res.status(200).cookie("accesstoken", accesstoken).cookie("refreshtoken",refreshtoken).json("acces token refresh succesfully");
 }
 
-module.exports = {registeruser,loginuser, logoutuser,renewaccestoken};
+const changepassword = async(req,res)=>{
+    try {
+        const {oldpassword , newpassword , confirmpassword} = req.body;
+        if(!oldpassword || !newpassword || !confirmpassword)
+        {
+            throw new ApiError (404 , "all fileds are mandotory");
+        }
+        if(newpassword !== confirmpassword)
+        {
+            throw new ApiError(404 , "password doesnt match");
+        }
+        const user = await User.findById(req.user?._id) ;
+        if(!user)
+        {
+            throw new ApiError(402, "something went wrong");
+        }
+        const ispasswordmatch = await user.ispasswordmatch(oldpassword);
+    
+        if(!ispasswordmatch)
+        {
+            throw new ApiError(401, "incorrect pasword");
+        }
+        user.password = newpassword ;
+        await user.save({validateBeforeSave : false});
+        return res.status(200).json("password change succesfully");
+    } catch (error) {
+         console.log(error.message);
+         return res.json(error.message)
+         
+    }
+  
+}
+
+const getcurrentuser = async(req,res)=>{
+    try{
+        return res.status.json(req.user).select("-password");
+
+    }
+    catch(error)
+    {  
+         console.log(error.message);
+        return res.json(error.message);
+
+    }
+}
+
+const updateprofile = async(req,res)=>{
+   try {
+     const {fullname , email} = req.body;
+     if(!fullname || !email)
+     {
+        throw new ApiError(404 , "all flieds are required");
+     } 
+     const user = await User.findById(req.user?._id);
+     user.fullname = fullname;
+     user.email = email ;
+     await user.save({validateBeforeSave : false});
+     const updateduser = await User.findById(user._id);
+     return res.status(200).json(updateduser);
+   } catch (error) {
+        console.log(error.message);
+        return res.json(error.message);
+        
+   }
+}
+
+const updateuseravtar = async(req,res)=> {
+   try {
+     const avatarLocalPath = req.file?.path;
+     if(!avatarLocalPath){
+         throw new ApiError(404, "file not recived");
+     }
+    const avatar =   await uploadOnCloudinary(avatarLocalPath);
+    if(!avatar.url){
+     throw new ApiError(501 , "uploading on cloud fail");
+    }
+ 
+    const updated  = await User.findByIdAndUpdate(req.user?._id ,
+     {
+         $set : {
+             avatar : avatar.url
+         }
+     },
+     {new : true }).select("-password");
+     return res.status(200).json(updated);
+   } catch (error) {
+       console.log(error.message);
+       return res.status(error.statusCode).json(error.message);  
+   }
+
+}
+
+const updateusercoverimage = async (req,res)=>{
+    try {
+        const coverImageLocalPath = req.file?.path;
+        if(!coverImageLocalPath)
+        {
+            throw new ApiError(404 ,"cover image not recived to server");
+        }
+        const coverimage = await uploadOnCloudinary(coverImageLocalPath);
+        if(!coverimage.url)
+        {
+            throw new ApiError(501 ,"cover image upload failed on server");
+        }
+    
+        const updated = await User.findByIdAndUpdate(
+            req.user?._id,
+            {
+                $set : {
+                    coverimage : coverimage.url
+                }
+            },
+            {new : true }
+        ).select("-password");
+    
+        return res.status(200).json(updated);
+    } catch (error) {
+         console.log(error.message);
+         return res.json(error.message);
+    }
+}
+
+
+module.exports = {
+     registeruser,
+     loginuser,
+     logoutuser,
+     renewaccestoken,
+     changepassword,
+     getcurrentuser,
+     updateprofile,
+     updateuseravtar,
+     updateusercoverimage
+    };
