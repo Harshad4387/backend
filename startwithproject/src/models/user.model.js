@@ -78,7 +78,7 @@ userSchema.methods.refreshtokentokengenertor = function()
     return jwt.sign({
          _id : this._id
     } ,
-process.env.REFRESH_TOEKN_SECERT,
+process.env.REFRESH_TOKEN_SECERT,
 {
     expiresIn : process.env.REFRESH_TOEKN_EXPIRY
 })

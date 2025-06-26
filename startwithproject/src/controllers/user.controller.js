@@ -200,6 +200,8 @@ const changepassword = async(req,res)=>{
         {
             throw new ApiError (404 , "all fileds are mandotory");
         }
+        
+        
         if(newpassword !== confirmpassword)
         {
             throw new ApiError(404 , "password doesnt match");
@@ -210,6 +212,7 @@ const changepassword = async(req,res)=>{
             throw new ApiError(402, "something went wrong");
         }
         const ispasswordmatch = await user.ispasswordmatch(oldpassword);
+        
     
         if(!ispasswordmatch)
         {
@@ -217,7 +220,8 @@ const changepassword = async(req,res)=>{
         }
         user.password = newpassword ;
         await user.save({validateBeforeSave : false});
-        return res.status(200).json("password change succesfully");
+        const updated = await User.findById(user._id);
+        return res.status(200).json(updated);
     } catch (error) {
          console.log(error.message);
          return res.json(error.message)
@@ -228,7 +232,7 @@ const changepassword = async(req,res)=>{
 
 const getcurrentuser = async(req,res)=>{
     try{
-        return res.status.json(req.user).select("-password");
+        return res.status(200).json(req.user).select("-password");
 
     }
     catch(error)
@@ -266,21 +270,21 @@ const updateuseravtar = async(req,res)=> {
          throw new ApiError(404, "file not recived");
      }
     const avatar =   await uploadOnCloudinary(avatarLocalPath);
-    if(!avatar.url){
+    if(!avatar){
      throw new ApiError(501 , "uploading on cloud fail");
     }
- 
+   
     const updated  = await User.findByIdAndUpdate(req.user?._id ,
      {
          $set : {
-             avatar : avatar.url
+             avatar : avatar
          }
      },
      {new : true }).select("-password");
      return res.status(200).json(updated);
    } catch (error) {
        console.log(error.message);
-       return res.status(error.statusCode).json(error.message);  
+       return res.status(404).json(error.message);  
    }
 
 }
