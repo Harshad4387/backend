@@ -12,12 +12,8 @@ const verifyjwt = async(req,res,next)=>{
         }
 
         const decoded  = jwt.verify(token,process.env.JWT_TOKEN_SECERT);
-        
-        
-    
+     
         req.user = decoded ;
-        console.log(decoded);
-        
         next();
 
 

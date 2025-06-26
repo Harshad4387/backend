@@ -1,12 +1,11 @@
 const ApiError = require('../utlis/apierror.js');
 const User = require("../models/user.model.js");
 const { uploadOnCloudinary } = require("../utlis/cloudnairy.js");
+const jwt = require('jsonwebtoken');
 
 const registeruser = async (req, res) => {
     try {
         const { fullname, email, username, password } = req.body;
-
-        
         if (!fullname || !email || !username || !password) {
             throw new ApiError(400, "All fields are required");
         }
@@ -145,12 +144,12 @@ const logoutuser = async(req,res)=>{
     try{
 
         const user = await User.findById(req.user._id);
-        console.log(req.user);
+    
         if(!user)
         {
             throw new ApiError(402,"user not found to logout");
         }
-        console.log(user);
+    
         
         user.refreshtoken = "";
         await user.save({validateBeforeSave : false});
@@ -168,4 +167,30 @@ const logoutuser = async(req,res)=>{
     }
 }
 
-module.exports = {registeruser,loginuser, logoutuser};
+const renewaccestoken = async (req,res)=>{
+    const incomingrefrestoken = req.cookies?.accesstoken || req.body.accesstoken;
+    if(!incomingrefrestoken){
+        throw new ApiError(404,"refresh token not found");
+    }
+    console.log(incomingrefrestoken);
+
+    const decoded = jwt.verify(incomingrefrestoken,process.env.REFRESH_TOKEN_SECERT);
+    console.log(decoded);
+    
+
+    if(!decoded)
+    {
+        throw new ApiError(404, "not get refresh token");
+    }
+    const user = await User.findById(decoded?.id);
+
+    if(incomingrefrestoken !== user?.refreshtoken)
+    {
+        throw new ApiError(402, "invalid refresh token");
+    }
+    const {accesstoken,refreshtoken} = await generaterefreshtokenandaccesstoken(user?._id);
+
+    res.status(200).cookie("accesstoken", accesstoken).cookie("refreshtoken",refreshtoken).json("acces token refresh succesfully");
+}
+
+module.exports = {registeruser,loginuser, logoutuser,renewaccestoken};
